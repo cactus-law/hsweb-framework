@@ -7,9 +7,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.concurrent.Callable;
 
 /**
- * TODO 完成注释
+ * 使用spring管理事务的异步任务
  *
  * @author zhouhao
+ * @see TransactionTemplate
  */
 public class SpringTransactionSupportJob<V> implements TransactionSupportJob<V> {
 
@@ -46,7 +47,9 @@ public class SpringTransactionSupportJob<V> implements TransactionSupportJob<V> 
     @Override
     public V call() throws Exception {
         transactionStatus = transactionTemplate.getTransactionManager().getTransaction(transactionTemplate);
-        if (rollback) transactionStatus.setRollbackOnly();
+        if (rollback) {
+            transactionStatus.setRollbackOnly();
+        }
         return target.call();
     }
 }

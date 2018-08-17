@@ -46,18 +46,6 @@ public abstract class EnableCacheGenericEntityService<E extends GenericEntity<PK
     @Override
     @Caching(
             evict = {
-                    @CacheEvict(key = "'id:'+#entity.id"),
-                    @CacheEvict(key = "'all'"),
-                    @CacheEvict(key = "'count'")
-            }
-    )
-    protected int updateByPk(E entity) {
-        return super.updateByPk(entity);
-    }
-
-    @Override
-    @Caching(
-            evict = {
                     @CacheEvict(key = "'id:'+#result"),
                     @CacheEvict(key = "'all'"),
                     @CacheEvict(key = "'count'")
@@ -75,7 +63,7 @@ public abstract class EnableCacheGenericEntityService<E extends GenericEntity<PK
                     @CacheEvict(key = "'count'")
             }
     )
-    public int deleteByPk(PK pk) {
+    public E deleteByPk(PK pk) {
         return super.deleteByPk(pk);
     }
 

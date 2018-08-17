@@ -73,7 +73,7 @@ public class SystemInitialize {
                 }
             }
 
-            rdbTable.createUpdate().set(targetVersion).where().sql("1=1").exec();
+            rdbTable.createUpdate().set(targetVersion).where().is("name",targetVersion.getName()).exec();
         }
     }
 
@@ -106,12 +106,16 @@ public class SystemInitialize {
     }
 
     private SystemVersion.Dependency getInstalledDependency(String groupId, String artifactId) {
-        if (installed == null) return null;
+        if (installed == null) {
+            return null;
+        }
         return installed.getDependency(groupId, artifactId);
     }
 
     private SimpleDependencyInstaller getReadyToInstallDependency(String groupId, String artifactId) {
-        if (readyToInstall == null) return null;
+        if (readyToInstall == null) {
+            return null;
+        }
         return readyToInstall.stream()
                 .filter(installer -> installer.getDependency().isSameDependency(groupId, artifactId))
                 .findFirst().orElse(null);
@@ -163,7 +167,7 @@ public class SystemInitialize {
             return;
         }
         RDBTable<SystemVersion> rdbTable = database.getTable("s_system");
-        installed = rdbTable.createQuery().single();
+        installed = rdbTable.createQuery().where("name",targetVersion.getName()).single();
     }
 
 

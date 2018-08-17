@@ -1,3 +1,6 @@
+logging:
+    level:
+      org.hswebframework.web: debug
 spring:
     aop:
         auto: true

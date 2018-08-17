@@ -1,5 +1,6 @@
 package org.hswebframework.web.socket.message;
 
+import lombok.extern.slf4j.Slf4j;
 import org.hswebframework.web.concurrent.counter.Counter;
 import org.hswebframework.web.concurrent.counter.CounterManager;
 import org.hswebframework.web.concurrent.counter.SimpleCounterManager;
@@ -20,13 +21,13 @@ import static org.hswebframework.web.message.builder.StaticMessageBuilder.object
 import static org.hswebframework.web.message.builder.StaticMessageSubjectBuilder.*;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
+@Slf4j
 public class DefaultWebSocketMessager implements WebSocketMessager {
 
     private Messager messager;
+    private CounterManager counterManager;
 
     public DefaultWebSocketMessager(Messager messager) {
         this(messager, new SimpleCounterManager());
@@ -34,13 +35,12 @@ public class DefaultWebSocketMessager implements WebSocketMessager {
 
     public DefaultWebSocketMessager(Messager messager, CounterManager counterManager) {
         this.messager = messager;
-        this.counterManager = counterManager == null ? new SimpleCounterManager() : counterManager;
+        this.counterManager = counterManager;
     }
 
     //              command,   type,     sessionId
     private final Map<String, Map<String, Map<String, MessageSubscribeSession>>> store = new ConcurrentHashMap<>(32);
 
-    private CounterManager counterManager = new SimpleCounterManager();
 
 
     @Override
@@ -95,7 +95,7 @@ public class DefaultWebSocketMessager implements WebSocketMessager {
                     }
                     socketSession.sendMessage(new TextMessage(((ObjectMessage) message).getObject().toString()));
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("execute WebSocket command {} error",command,e);
                 }
             });
             return new MessageSubscribeSession(subscribe, socketSession) {

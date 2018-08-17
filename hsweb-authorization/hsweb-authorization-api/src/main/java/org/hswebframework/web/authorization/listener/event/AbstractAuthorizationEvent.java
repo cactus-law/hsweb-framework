@@ -19,6 +19,8 @@
 package org.hswebframework.web.authorization.listener.event;
 
 
+import org.springframework.context.ApplicationEvent;
+
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -28,12 +30,14 @@ import java.util.function.Function;
  * @author zhouhao
  * @since 3.0
  */
-public abstract class AbstractAuthorizationEvent implements AuthorizationEvent {
+public abstract class AbstractAuthorizationEvent extends ApplicationEvent implements AuthorizationEvent {
+    private static final long serialVersionUID = -3027505108916079214L;
+
     protected String username;
 
     protected String password;
 
-    private Function<String, Object> parameterGetter;
+    private transient Function<String, Object> parameterGetter;
 
     /**
      * 带参构造方法,所有参数不能为null
@@ -43,14 +47,17 @@ public abstract class AbstractAuthorizationEvent implements AuthorizationEvent {
      * @param parameterGetter 参数获取函数,用户获取授权时传入的参数
      */
     public AbstractAuthorizationEvent(String username, String password, Function<String, Object> parameterGetter) {
-        if (username == null || password == null || parameterGetter == null) throw new NullPointerException();
+        super(username + "/" + password);
+        if (username == null || password == null || parameterGetter == null) {
+            throw new NullPointerException();
+        }
         this.username = username;
         this.password = password;
         this.parameterGetter = parameterGetter;
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> Optional<T> getParameter(String name) {
+    public  <T> Optional<T> getParameter(String name) {
         return Optional.ofNullable((T) parameterGetter.apply(name));
     }
 

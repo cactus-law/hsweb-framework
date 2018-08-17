@@ -1,16 +1,24 @@
 package org.hswebframework.web.authorization.simple;
 
+import lombok.*;
 import org.hswebframework.web.authorization.Permission;
 import org.hswebframework.web.authorization.access.DataAccessConfig;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SimplePermission implements Permission {
+
+    private static final long serialVersionUID = 7587266693680162184L;
 
     private String id;
 
@@ -18,38 +26,18 @@ public class SimplePermission implements Permission {
 
     private Set<DataAccessConfig> dataAccesses;
 
-    public SimplePermission() {
-    }
 
-    public SimplePermission(String id, Set<String> actions) {
-        this.id = id;
-        this.actions = actions;
-    }
-
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    @Override
     public Set<String> getActions() {
+        if (actions == null) {
+            actions = new java.util.HashSet<>();
+        }
         return actions;
     }
 
-    public void setActions(Set<String> actions) {
-        this.actions = actions;
-    }
-
-    @Override
     public Set<DataAccessConfig> getDataAccesses() {
+        if (dataAccesses == null) {
+            dataAccesses = new java.util.HashSet<>();
+        }
         return dataAccesses;
-    }
-
-    public void setDataAccesses(Set<DataAccessConfig> dataAccesses) {
-        this.dataAccesses = dataAccesses;
     }
 }

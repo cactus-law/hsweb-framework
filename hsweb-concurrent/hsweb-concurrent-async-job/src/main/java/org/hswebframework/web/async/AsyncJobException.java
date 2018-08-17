@@ -6,19 +6,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * TODO 完成注释
- *
+ * 异步任务执行异常
  * @author zhouhao
  */
 public class AsyncJobException extends RuntimeException {
-    List<Exception> errors;
+    private static final long serialVersionUID = 4003904073250315538L;
+    private List<Exception> errors;
 
     public AsyncJobException(List<Exception> errors) {
-        this.errors = errors;
+       this(errors.size()>0?errors.get(0).getMessage():null,errors);
     }
 
     public AsyncJobException(String message, List<Exception> errors) {
-        super(message);
+        super(message,errors.size()>0?errors.get(0):null);
         this.errors = errors;
     }
 

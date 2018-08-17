@@ -44,7 +44,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -77,6 +79,9 @@ public class SystemInitializeAutoConfiguration implements CommandLineRunner, Bea
 
     private List<DynamicScriptEngine> engines;
 
+    @Autowired
+    private Environment environment;
+
     @PostConstruct
     public void init() {
         engines = Stream.of("js", "groovy")
@@ -104,13 +109,18 @@ public class SystemInitializeAutoConfiguration implements CommandLineRunner, Bea
     public void run(String... args) throws Exception {
         DatabaseType type = DataSourceHolder.currentDatabaseType();
         SystemVersion version = appProperties.build();
+        if(version.getName()==null){
+            version.setName("unknown");
+        }
         Connection connection = null;
         String jdbcUserName;
         try {
             connection = DataSourceHolder.currentDataSource().getNative().getConnection();
             jdbcUserName = connection.getMetaData().getUserName();
         } finally {
-            if (null != connection) connection.close();
+            if (null != connection) {
+                connection.close();
+            }
         }
         RDBDatabaseMetaData metaData;
         switch (type) {
@@ -119,7 +129,12 @@ public class SystemInitializeAutoConfiguration implements CommandLineRunner, Bea
                 metaData.setParser(new OracleTableMetaParser(sqlExecutor));
                 break;
             case mysql:
-                metaData = new MysqlRDBDatabaseMetaData();
+                String engine = environment.getProperty("mysql.engine");
+                if (StringUtils.hasText(engine)) {
+                    metaData = new MysqlRDBDatabaseMetaData(engine);
+                } else {
+                    metaData = new MysqlRDBDatabaseMetaData();
+                }
                 metaData.setParser(new MysqlTableMetaParser(sqlExecutor));
                 break;
             default:
@@ -127,6 +142,8 @@ public class SystemInitializeAutoConfiguration implements CommandLineRunner, Bea
                 metaData.setParser(new H2TableMetaParser(sqlExecutor));
                 break;
         }
+        metaData.init();
+
         SimpleDatabase database = new SimpleDatabase(metaData, sqlExecutor);
         database.setAutoParse(true);
         SystemInitialize initialize = new SystemInitialize(sqlExecutor, database, version);
@@ -144,7 +161,7 @@ public class SystemInitializeAutoConfiguration implements CommandLineRunner, Bea
     }
 
     @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName)  {
+    public Object postProcessAfterInitialization(Object bean, String beanName) {
         ScriptScope scope;
         if (bean instanceof Service) {
             addGlobalVariable(beanName, bean);

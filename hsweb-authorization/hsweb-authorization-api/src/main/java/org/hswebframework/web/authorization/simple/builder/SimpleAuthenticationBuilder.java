@@ -51,7 +51,12 @@ public class SimpleAuthenticationBuilder implements AuthenticationBuilder {
     @Override
     public AuthenticationBuilder user(Map<String, String> user) {
         Objects.requireNonNull(user.get("id"));
-        user(new SimpleUser(user.get("id"), user.get("username"), user.get("name")));
+        user(SimpleUser.builder()
+                .id(user.get("id"))
+                .username(user.get("username"))
+                .name(user.get("name"))
+                .type(user.get("type"))
+                .build());
         return this;
     }
 
@@ -78,13 +83,21 @@ public class SimpleAuthenticationBuilder implements AuthenticationBuilder {
         JSONArray jsonArray = JSON.parseArray(permissionJson);
         List<Permission> permissions = new ArrayList<>();
         for (int i = 0; i < jsonArray.size(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(0);
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
             SimplePermission permission = new SimplePermission();
             permission.setId(jsonObject.getString("id"));
-            permission.setActions(new HashSet<>(jsonObject.getJSONArray("actions").toJavaList(String.class)));
-            permission.setDataAccesses(jsonObject.getJSONArray("dataAccesses").stream().map(JSONObject.class::cast)
-                    .map(dataJson -> dataBuilderFactory.create().fromJson(dataJson.toJSONString()).build())
-                    .collect(Collectors.toSet()));
+
+            JSONArray actions = jsonObject.getJSONArray("actions");
+            if (actions != null) {
+                permission.setActions(new HashSet<>(actions.toJavaList(String.class)));
+            }
+            JSONArray dataAccess = jsonObject.getJSONArray("dataAccesses");
+            if (null != dataAccess) {
+                permission.setDataAccesses(dataAccess.stream().map(JSONObject.class::cast)
+                        .map(dataJson -> dataBuilderFactory.create().fromJson(dataJson.toJSONString()).build())
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()));
+            }
             permissions.add(permission);
         }
         authentication.setPermissions(permissions);

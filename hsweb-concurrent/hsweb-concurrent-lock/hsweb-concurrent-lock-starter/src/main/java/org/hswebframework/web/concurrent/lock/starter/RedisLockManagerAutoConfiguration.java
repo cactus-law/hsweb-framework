@@ -11,14 +11,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 @Configuration
-@ConditionalOnClass(RedissonClient.class)
+@ConditionalOnClass({RedissonClient.class, RedissonLockManager.class})
 @ConditionalOnBean(RedissonClient.class)
-//@AutoConfigureBefore(LockManagerAutoConfiguration.class)
 public class RedisLockManagerAutoConfiguration {
     @Bean
     public LockManager lockManager(RedissonClient redissonClient) {

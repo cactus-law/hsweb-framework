@@ -13,13 +13,15 @@ public class RedissonLockManager extends AbstractLockManager {
     private RedissonClient redisson;
 
     public RedissonLockManager(RedissonClient redisson) {
-        if (null == redisson) throw new NullPointerException();
+        if (null == redisson) {
+            throw new NullPointerException();
+        }
         this.redisson = redisson;
     }
 
     @Override
     protected Lock createLock(String lockName) {
-        return redisson.getLock(lockName);
+        return redisson.getFairLock(lockName);
     }
 
     @Override

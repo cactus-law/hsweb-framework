@@ -11,10 +11,14 @@ import org.hswebframework.web.authorization.access.DataAccessController;
 import org.hswebframework.web.authorization.annotation.Logical;
 import org.hswebframework.web.authorization.define.AuthorizeDefinition;
 import org.hswebframework.web.authorization.define.AuthorizingContext;
+import org.hswebframework.web.authorization.define.HandleType;
 import org.hswebframework.web.authorization.exception.AccessDenyException;
+import org.hswebframework.web.authorization.listener.event.AuthorizingHandleBeforeEvent;
 import org.hswebframework.web.boost.aop.context.MethodInterceptorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.*;
 import java.util.function.Function;
@@ -30,6 +34,8 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    private ApplicationEventPublisher eventPublisher;
+
     public DefaultAuthorizingHandler(DataAccessController dataAccessController) {
         this.dataAccessController = dataAccessController;
     }
@@ -41,25 +47,49 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
         this.dataAccessController = dataAccessController;
     }
 
+    @Autowired
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
+
     @Override
-    public void handle(AuthorizingContext context) {
-
+    public void handRBAC(AuthorizingContext context) {
+        if(handleEvent(context,HandleType.RBAC)){
+            return;
+        }
         //进行rdac权限控制
-        handleRdac(context.getAuthentication(), context.getDefinition());
-
-        //进行数据权限控制
-        handleDataAccess(context);
-
+        handleRBAC(context.getAuthentication(), context.getDefinition());
         //表达式权限控制
         handleExpression(context.getAuthentication(), context.getDefinition(), context.getParamContext());
 
     }
+    private boolean handleEvent(AuthorizingContext context,HandleType type){
+        if(null!=eventPublisher) {
+            AuthorizingHandleBeforeEvent event = new AuthorizingHandleBeforeEvent(context, type);
+            eventPublisher.publishEvent(event);
+            if (!event.isExecute()) {
+                if (event.isAllow()) {
+                    return true;
+                } else {
+                    throw new AccessDenyException(event.getMessage());
+                }
+            }
+        }
+        return false;
+    }
+    public void handleDataAccess(AuthorizingContext context) {
 
-    protected void handleDataAccess(AuthorizingContext context) {
         if (dataAccessController == null) {
             logger.warn("dataAccessController is null,skip result access control!");
             return;
         }
+        if(context.getDefinition().getDataAccessDefinition()==null){
+            return;
+        }
+        if(handleEvent(context,HandleType.DATA)){
+            return;
+        }
+
         List<Permission> permission = context.getAuthentication().getPermissions()
                 .stream()
                 .filter(per -> context.getDefinition().getPermissions().contains(per.getId()))
@@ -74,7 +104,9 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
                 .filter(access -> context.getDefinition().getActions().contains(access.getAction()))
                 .collect(Collectors.toSet());
         //无规则,则代表不进行控制
-        if (accesses.isEmpty()) return;
+        if (accesses.isEmpty()) {
+            return;
+        }
         //单个规则验证函数
         Function<Predicate<DataAccessConfig>, Boolean> function = accesses.stream()::allMatch;
         //调用控制器进行验证
@@ -110,7 +142,7 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
         }
     }
 
-    protected void handleRdac(Authentication authentication, AuthorizeDefinition definition) {
+    protected void handleRBAC(Authentication authentication, AuthorizeDefinition definition) {
         boolean access = true;
         //多个设置时的判断逻辑
         Logical logical = definition.getLogical() == Logical.DEFAULT ? Logical.OR : definition.getLogical();
@@ -125,25 +157,35 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
         // 控制权限
         if (!definition.getPermissions().isEmpty()) {
             if (logger.isInfoEnabled()) {
-                logger.info("do permission access handle : permissions{},actions{} ", permissionsDef, actionsDef);
+                logger.info("do permission access handle : permissions{}({}),actions{} ,definition:{}.{} ({})",
+                        definition.getPermissionDescription(),
+                        permissionsDef, actionsDef
+                        ,definition.getPermissions(),
+                        definition.getActions(),
+                        definition.getLogical());
             }
             List<Permission> permissions = authentication.getPermissions().stream()
                     .filter(permission -> {
                         // 未持有任何一个权限
-                        if (!permissionsDef.contains(permission.getId())) return false;
+                        if (!permissionsDef.contains(permission.getId())) {
+                            return false;
+                        }
                         //未配置action
-                        if (actionsDef.isEmpty())
+                        if (actionsDef.isEmpty()) {
                             return true;
+                        }
                         //判断action
                         List<String> actions = permission.getActions()
                                 .stream()
                                 .filter(actionsDef::contains)
                                 .collect(Collectors.toList());
 
-                        if (actions.isEmpty()) return false;
+                        if (actions.isEmpty()) {
+                            return false;
+                        }
 
                         //如果 控制逻辑是or,则只要过滤结果数量不为0.否则过滤结果数量必须和配置的数量相同
-                        return logicalIsOr ? actions.size() > 0 : permission.getActions().containsAll(actions);
+                        return logicalIsOr || permission.getActions().containsAll(actions);
                     }).collect(Collectors.toList());
             access = logicalIsOr ?
                     permissions.size() > 0 :
@@ -153,7 +195,7 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
         //控制角色
         if (!rolesDef.isEmpty()) {
             if (logger.isInfoEnabled()) {
-                logger.info("do role access handle : roles{} ", rolesDef);
+                logger.info("do role access handle : roles{} , definition:{}", rolesDef,definition.getRoles());
             }
             Function<Predicate<Role>, Boolean> func = logicalIsOr
                     ? authentication.getRoles().stream()::anyMatch
@@ -163,7 +205,7 @@ public class DefaultAuthorizingHandler implements AuthorizingHandler {
         //控制用户
         if (!usersDef.isEmpty()) {
             if (logger.isInfoEnabled()) {
-                logger.info("do user access handle : users{} ", usersDef);
+                logger.info("do user access handle : users{} , definition:{} ", usersDef,definition.getUser());
             }
             Function<Predicate<String>, Boolean> func = logicalIsOr
                     ? usersDef.stream()::anyMatch

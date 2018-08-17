@@ -10,11 +10,10 @@ import org.springframework.util.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 @SuppressWarnings("unchecked")
@@ -30,9 +29,9 @@ public class LockProcessor<A extends Annotation, L> {
 
     private Function<String, L> lockGetter;
 
-    private Function<L, Throwable> lockAccepter;
+    private LockAccepter<L> lockAccepter;
 
-    private Function<L, Throwable> unlockAccepter;
+    private LockAccepter<L> unlockAccepter;
 
     private Map<String, L> lockStore = new HashMap<>();
 
@@ -56,12 +55,12 @@ public class LockProcessor<A extends Annotation, L> {
         return this;
     }
 
-    public LockProcessor<A, L> lock(Function<L, Throwable> lockAccepter) {
+    public LockProcessor<A, L> lock(LockAccepter<L> lockAccepter) {
         this.lockAccepter = lockAccepter;
         return this;
     }
 
-    public LockProcessor<A, L> unlock(Function<L, Throwable> unlockAccepter) {
+    public LockProcessor<A, L> unlock(LockAccepter<L> unlockAccepter) {
         this.unlockAccepter = unlockAccepter;
         return this;
     }
@@ -99,11 +98,14 @@ public class LockProcessor<A extends Annotation, L> {
     public Throwable doLock() {
         Throwable lockError = null;
         for (Map.Entry<String, L> lock : lockStore.entrySet()) {
-            Throwable error = lockAccepter.apply(lock.getValue());
-            if (error == null) {
+            try {
+                boolean success = lockAccepter.accept(lock.getValue());
+                if (!success) {
+                    return new TimeoutException("try lock " + lock.getKey() + " error");
+                }
                 successLock.add(lock.getValue());
-            } else {
-                lockError = error;
+            } catch (Throwable throwable) {
+                lockError = throwable;
             }
         }
         return lockError;
@@ -111,10 +113,16 @@ public class LockProcessor<A extends Annotation, L> {
 
     public void doUnlock() {
         for (L lock : successLock) {
-            Throwable error = unlockAccepter.apply(lock);
-            if (null != error)
+            try {
+                unlockAccepter.accept(lock);
+            } catch (Throwable error) {
                 logger.error("unlock {} error", interceptorHolder.getMethod(), error);
+            }
         }
+    }
+
+    public interface LockAccepter<T> {
+        boolean accept(T t) throws Throwable;
     }
 
 }

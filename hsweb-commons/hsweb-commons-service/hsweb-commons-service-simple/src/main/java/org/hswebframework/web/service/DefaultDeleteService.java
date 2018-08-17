@@ -21,12 +21,13 @@ package org.hswebframework.web.service;
 /**
  * @author zhouhao
  */
-public interface DefaultDeleteService<PK> extends DeleteService<PK> {
+public interface DefaultDeleteService<E,PK> extends DeleteService<E,PK> {
     /**
      * 根据主键删除记录
      *
      * @param pk 主键
      * @return 影响记录数
      */
-    int deleteByPk(PK pk);
+    @Override
+    E deleteByPk(PK pk);
 }

@@ -11,3 +11,11 @@ hsweb:
     app:
       name: 权限管理测试
       version: 3.0.0
+    authorize:
+      sync: true
+      auto-parse: true
+logging:
+  level:
+    org.springframework: WARN
+    org.hswebframework: WARN
+    org.hswebframework.web: DEBUG

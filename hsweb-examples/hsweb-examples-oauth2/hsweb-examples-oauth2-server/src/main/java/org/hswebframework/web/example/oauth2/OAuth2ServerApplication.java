@@ -21,11 +21,11 @@ package org.hswebframework.web.example.oauth2;
 import com.alibaba.fastjson.JSON;
 import org.hswebframework.web.authorization.Permission;
 import org.hswebframework.web.authorization.access.DataAccessConfig;
-import org.hswebframework.web.authorization.oauth2.server.entity.OAuth2ClientEntity;
+import org.hswebframework.web.entity.oauth2.server.OAuth2ClientEntity;
 import org.hswebframework.web.authorization.simple.SimpleFieldFilterDataAccessConfig;
 import org.hswebframework.web.commons.entity.DataStatus;
 import org.hswebframework.web.commons.entity.factory.EntityFactory;
-import org.hswebframework.web.dao.oauth2.OAuth2ClientDao;
+import org.hswebframework.web.dao.oauth2.server.OAuth2ClientDao;
 import org.hswebframework.web.entity.authorization.*;
 import org.hswebframework.web.entity.authorization.bind.BindRoleUserEntity;
 import org.hswebframework.web.service.authorization.AuthorizationSettingService;
@@ -161,8 +161,7 @@ public class OAuth2ServerApplication implements CommandLineRunner {
         clientEntity.setName("测试");
         clientEntity.setType("test");
         clientEntity.setCreatorId("admin");
-        // 这里与 hsweb-examples-oauth2-client 的回调地址对应
-        clientEntity.setRedirectUri("http://localhost:8808/oauth2/callback/hsweb");
+        clientEntity.setRedirectUri("http://localhost:8808/");
         clientEntity.setCreateTime(System.currentTimeMillis());
         clientEntity.setSupportGrantTypes(new HashSet<>(Collections.singletonList("*")));
         clientEntity.setStatus(DataStatus.STATUS_ENABLED);

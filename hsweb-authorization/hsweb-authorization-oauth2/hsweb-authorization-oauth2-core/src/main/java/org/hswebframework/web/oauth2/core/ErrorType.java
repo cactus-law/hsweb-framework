@@ -49,7 +49,7 @@ public enum ErrorType {
     UNSUPPORTED_RESPONSE_TYPE(4014), //不支持的响应类型
 
     EXPIRED_CODE(4015), //AUTHORIZATION_CODE过期
-    EXPIRED_REFRESH_TOKEN(4020), //AUTHORIZATION_CODE过期
+    EXPIRED_REFRESH_TOKEN(4020), //REFRESH_TOKEN过期
 
     CLIENT_DISABLED(4016),//客户端已被禁用
 
@@ -58,7 +58,13 @@ public enum ErrorType {
     USER_NOT_EXIST(4041),//客户端不存在
 
     ACCESS_DENIED(503), //访问被拒绝
-    OTHER(5001); //其他错误 ;
+
+    OTHER(5001), //其他错误 ;
+
+    PARSE_RESPONSE_ERROR(5002),//解析返回结果错误
+
+    SERVICE_ERROR(5003); //服务器返回错误信息
+
 
     private final String message;
     private final int    code;
@@ -76,7 +82,9 @@ public enum ErrorType {
     }
 
     public String message() {
-        if (message == null) return this.name();
+        if (message == null) {
+            return this.name();
+        }
         return message;
     }
 

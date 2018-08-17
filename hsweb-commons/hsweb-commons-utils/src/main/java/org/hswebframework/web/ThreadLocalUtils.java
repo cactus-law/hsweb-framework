@@ -37,8 +37,19 @@ import java.util.function.Supplier;
  * @since 2.0
  */
 @SuppressWarnings("unchecked")
-public class ThreadLocalUtils {
+public final class ThreadLocalUtils {
+
+    private ThreadLocalUtils() {
+    }
+
     private static final ThreadLocal<Map<String, Object>> local = ThreadLocal.withInitial(HashMap::new);
+
+    /**
+     * @return threadLocal中的全部值
+     */
+    public static Map<String, Object> getAll() {
+        return local.get();
+    }
 
     /**
      * 设置一个值到ThreadLocal

@@ -1,5 +1,6 @@
 package org.hswebframework.web.concurrent.lock.starter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.hswebframework.web.AopUtils;
@@ -18,10 +19,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
+@Slf4j
 public class AopLockAdvisor extends StaticMethodMatcherPointcutAdvisor {
 
     public AopLockAdvisor(LockManager lockManager) {
@@ -50,50 +50,58 @@ public class AopLockAdvisor extends StaticMethodMatcherPointcutAdvisor {
                                 .lockNameIs(WriteLock::value)
                                 .lockIs(name -> lockManager.getReadWriteLock(name).writeLock())));
             }
-
+            boolean lockError = false;
             try {
                 for (LockProcessor processor : lockProcessors) {
                     Throwable e = processor.doLock();
                     if (e != null) {
+                        lockError = true;
                         throw e;
                     }
                 }
                 return methodInvocation.proceed();
             } finally {
                 for (LockProcessor processor : lockProcessors) {
-                    processor.doUnlock();
+                    try {
+                        processor.doUnlock();
+                    } catch (Exception e) {
+                        if (!lockError) {
+                            log.error("unlock {} error", methodInvocation.getMethod(), e);
+                        }
+                    }
                 }
             }
         });
     }
 
     protected <A extends Annotation> LockProcessor<A, java.util.concurrent.locks.Lock> initLockInfo(long timeout, TimeUnit timeUnit, LockProcessor<A, java.util.concurrent.locks.Lock> lockProcessor) {
-        return lockProcessor.lock(lock -> {
-            try {
-                lock.tryLock(timeout, timeUnit);
-                return null;
-            } catch (InterruptedException e) {
-                return e;
-            }
-        }).unlock(lock -> {
-            try {
-                lock.unlock();
-                return null;
-            } catch (Throwable e) {
-                return e;
-            }
-        }).init();
+        return lockProcessor
+                .lock(lock -> lock.tryLock(timeout, timeUnit))
+                .unlock(lock -> {
+                    lock.unlock();
+                    return true;
+                }).init();
     }
 
+    @Override
+    public int getOrder() {
+        return Integer.MIN_VALUE;
+    }
 
     @Override
     public boolean matches(Method method, Class<?> aClass) {
         Lock lock = AopUtils.findMethodAnnotation(aClass, method, Lock.class);
-        if (null != lock) return true;
+        if (null != lock) {
+            return true;
+        }
         ReadLock readLock = AopUtils.findMethodAnnotation(aClass, method, ReadLock.class);
-        if (null != readLock) return true;
+        if (null != readLock) {
+            return true;
+        }
         WriteLock writeLock = AopUtils.findMethodAnnotation(aClass, method, WriteLock.class);
-        if (null != writeLock) return true;
+        if (null != writeLock) {
+            return true;
+        }
         return false;
     }
 }

@@ -43,7 +43,7 @@ public interface Authentication extends Serializable {
      *   //如果权限信息不存在将抛出{@link NoSuchElementException}建议使用下面的方式获取
      *   Authentication auth=Authentication.current().orElse(null);
      *   //或者
-     *   Authentication auth=Authentication.current().orElseThrow(AuthorizeException::new);
+     *   Authentication auth=Authentication.current().orElseThrow(UnAuthorizedException::new);
      * </pre>
      *
      * @return 返回Optional对象进行操作
@@ -76,7 +76,9 @@ public interface Authentication extends Serializable {
      * @return 角色信息
      */
     default Optional<Role> getRole(String id) {
-        if (null == id) return null;
+        if (null == id) {
+            return Optional.empty();
+        }
         return getRoles().stream()
                 .filter(role -> role.getId().equals(id))
                 .findAny();
@@ -89,8 +91,10 @@ public interface Authentication extends Serializable {
      * @return 权限信息
      */
     default Optional<Permission> getPermission(String id) {
-        if (null == id) return null;
-        return getPermissions().parallelStream()
+        if (null == id) {
+            return Optional.empty();
+        }
+        return getPermissions().stream()
                 .filter(permission -> permission.getId().equals(id))
                 .findAny();
     }
@@ -103,7 +107,7 @@ public interface Authentication extends Serializable {
      * @return 是否持有权限
      */
     default boolean hasPermission(String permissionId, String... actions) {
-        return !getPermission(permissionId)
+        return getPermission(permissionId)
                 .filter(permission -> actions.length == 0 || permission.getActions().containsAll(Arrays.asList(actions)))
                 .isPresent();
     }
@@ -113,7 +117,7 @@ public interface Authentication extends Serializable {
      * @return 是否拥有某个角色
      */
     default boolean hasRole(String roleId) {
-        return !getRole(roleId).isPresent();
+        return getRole(roleId).isPresent();
     }
 
     /**
@@ -124,6 +128,7 @@ public interface Authentication extends Serializable {
      * @param <T>  属性值类型
      * @return Optional属性值
      */
+    @Deprecated
     <T extends Serializable> Optional<T> getAttribute(String name);
 
     /**
@@ -134,6 +139,7 @@ public interface Authentication extends Serializable {
      * @param object 属性值
      * @see AuthenticationManager#sync(Authentication)
      */
+    @Deprecated
     void setAttribute(String name, Serializable object);
 
     /**
@@ -142,6 +148,7 @@ public interface Authentication extends Serializable {
      * @param attributes 属性值map
      * @see AuthenticationManager#sync(Authentication)
      */
+    @Deprecated
     void setAttributes(Map<String, Serializable> attributes);
 
     /**
@@ -152,6 +159,7 @@ public interface Authentication extends Serializable {
      * @return 被删除的值
      * @see AuthenticationManager#sync(Authentication)
      */
+    @Deprecated
     <T extends Serializable> T removeAttributes(String name);
 
     /**
@@ -159,6 +167,7 @@ public interface Authentication extends Serializable {
      *
      * @return 全部属性集合
      */
+    @Deprecated
     Map<String, Serializable> getAttributes();
 
 }

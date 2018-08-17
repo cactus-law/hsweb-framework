@@ -11,8 +11,6 @@ import org.hswebframework.web.authorization.access.ScriptDataAccessConfig;
 import org.hswebframework.web.authorization.define.AuthorizingContext;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 public class ScriptDataAccessHandler implements DataAccessHandler {
@@ -25,7 +23,9 @@ public class ScriptDataAccessHandler implements DataAccessHandler {
     public boolean handle(DataAccessConfig access, AuthorizingContext context) {
         ScriptDataAccessConfig dataAccess = ((ScriptDataAccessConfig) access);
         DynamicScriptEngine engine = DynamicScriptEngineFactory.getEngine(dataAccess.getScriptLanguage());
-        if (engine == null) throw new UnsupportedOperationException(dataAccess.getScriptLanguage() + " {not_support}");
+        if (engine == null) {
+            throw new UnsupportedOperationException(dataAccess.getScriptLanguage() + " {not_support}");
+        }
         String scriptId = DigestUtils.md5Hex(dataAccess.getScript());
         try {
             if (!engine.compiled(scriptId)) {

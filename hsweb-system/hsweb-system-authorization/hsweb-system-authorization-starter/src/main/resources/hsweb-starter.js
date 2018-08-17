@@ -34,6 +34,7 @@ var versions = [
     // }
 ];
 var JDBCType = java.sql.JDBCType;
+
 function install(context) {
     var database = context.database;
     database.createOrAlter("s_user")
@@ -64,6 +65,8 @@ function install(context) {
         .addColumn().name("actions").clob().notNull().comment("可选操作(按钮)").commit()
         .addColumn().name("spt_da_types").clob().comment("支持的数据权限类型").commit()
         .addColumn().name("optional_fields").clob().comment("可选字段").commit()
+        .addColumn().name("parents").clob().comment("关联其他权限").commit()
+        .addColumn().name("type").varchar(128).comment("类型").commit()
         .comment("权限表").commit();
 
     database.createOrAlter("s_permission_role")
@@ -104,7 +107,7 @@ function install(context) {
         .addColumn().name("menu_id").varchar(32).notNull().comment("菜单ID").commit()
         .addColumn().name("setting_id").varchar(64).notNull().comment("设置ID").commit()
         .addColumn().name("path").varchar(2048).notNull().comment("树编码").commit()
-        .addColumn().name("sort_index").number(32).notNull().comment("树编码").commit()
+        .addColumn().name("sort_index").number(32).comment("树编码").commit()
         .addColumn().name("status").number(4, 0).comment("状态").commit()
         .addColumn().name("level").number(32, 0).comment("树深度").commit()
         .addColumn().name("config").clob().comment("其他配置").commit()
@@ -117,7 +120,7 @@ function install(context) {
         .addColumn().name("parent_id").varchar(32).comment("父级ID").commit()
         .addColumn().name("permission_id").varchar(2048).comment("权限ID").commit()
         .addColumn().name("path").varchar(2048).notNull().comment("树编码").commit()
-        .addColumn().name("sort_index").number(32).notNull().comment("树编码").commit()
+        .addColumn().name("sort_index").number(32).comment("树编码").commit()
         .addColumn().name("describe").varchar(128).comment("备注").commit()
         .addColumn().name("url").varchar(2000).comment("URL").commit()
         .addColumn().name("icon").varchar(512).comment("图标").commit()
@@ -147,6 +150,18 @@ function install(context) {
         .addColumn().name("sort_index").alias("sortIndex").comment("排序序号").jdbcType(java.sql.JDBCType.DECIMAL).length(32, 0).commit()
         .addColumn().name("status").alias("status").comment("状态").jdbcType(java.sql.JDBCType.DECIMAL).length(4, 0).commit()
         .comment("菜单分组关联").commit();
+
+    database.createOrAlter("s_user_setting")
+        .addColumn().name("u_id").varchar(32).notNull().primaryKey().comment("uid").commit()
+        .addColumn().name("name").varchar(128).comment("配置名称").commit()
+        .addColumn().name("describe").varchar(512).comment("说明").commit()
+        .addColumn().name("user_id").varchar(32).notNull().comment("用户ID").commit()
+        .addColumn().name("key").varchar(128).notNull().comment("配置标识").commit()
+        .addColumn().name("setting").clob().comment("配置内容").commit()
+        .addColumn().name("setting_id").varchar(32).notNull().comment("自定义配置id").commit()
+        .addColumn().name("create_time").datetime().notNull().comment("创建时间").commit()
+        .addColumn().name("update_time").datetime().comment("创建时间").commit()
+        .comment("用户设置表").commit();
 }
 
 //设置依赖

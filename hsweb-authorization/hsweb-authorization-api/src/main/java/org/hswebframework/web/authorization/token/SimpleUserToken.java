@@ -10,9 +10,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SimpleUserToken implements UserToken {
 
+    private static final long serialVersionUID = 1L;
+
     private String userId;
 
     private String token;
+
+    private String type = "default";
 
     private volatile TokenState state;
 
@@ -98,8 +102,39 @@ public class SimpleUserToken implements UserToken {
         requestTimesCounter.set(requestTimes);
     }
 
-    void touch() {
+    public void touch() {
         requestTimesCounter.addAndGet(1);
         lastRequestTime = System.currentTimeMillis();
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public SimpleUserToken copy() {
+        SimpleUserToken userToken = new SimpleUserToken();
+        userToken.firstRequestTime = firstRequestTime;
+        userToken.lastRequestTime = lastRequestTime;
+        userToken.requestTimesCounter = new AtomicLong(requestTimesCounter.get());
+        userToken.token = token;
+        userToken.userId = userId;
+        userToken.state = state;
+        userToken.maxInactiveInterval = maxInactiveInterval;
+        userToken.type = type;
+        return userToken;
+    }
+
+    @Override
+    public int hashCode() {
+        return token.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj != null && hashCode() == obj.hashCode();
     }
 }

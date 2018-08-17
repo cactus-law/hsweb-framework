@@ -23,13 +23,21 @@
     <parent>
         <artifactId>hsweb-examples-oauth2</artifactId>
         <groupId>org.hswebframework.web</groupId>
-        <version>3.0-SNAPSHOT</version>
+        <version>3.0.0-RC-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>hsweb-examples-oauth2-server</artifactId>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -102,6 +110,7 @@
             <artifactId>hsweb-system-oauth2-server-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
+
 
     </dependencies>
 </project>

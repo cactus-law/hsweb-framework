@@ -30,7 +30,7 @@ import java.io.Serializable;
  * @see OAuth2Request
  * @since 3.0
  */
-public interface OAuth2Session extends Serializable {
+public interface OAuth2Session{
     /**
      * 尝试进行认证
      *
@@ -66,6 +66,8 @@ public interface OAuth2Session extends Serializable {
      * @return 是否已关闭
      */
     boolean isClosed();
+
+    AccessTokenInfo requestAccessToken();
 
     AccessTokenInfo getAccessToken();
 

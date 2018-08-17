@@ -22,13 +22,9 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.hswebframework.web.authorization.Authentication;
 import org.hswebframework.web.authorization.Permission;
 import org.hswebframework.web.authorization.access.DataAccessConfig;
-import org.hswebframework.web.authorization.basic.aop.AopMethodAuthorizeDefinitionCustomizerParser;
 import org.hswebframework.web.authorization.basic.configuration.EnableAopAuthorize;
-import org.hswebframework.web.authorization.basic.define.EmptyAuthorizeDefinition;
-import org.hswebframework.web.authorization.basic.web.UserTokenHolder;
-import org.hswebframework.web.authorization.define.AuthorizeDefinition;
+import org.hswebframework.web.authorization.define.AuthorizeDefinitionInitializedEvent;
 import org.hswebframework.web.authorization.simple.SimpleFieldFilterDataAccessConfig;
-import org.hswebframework.web.boost.aop.context.MethodInterceptorContext;
 import org.hswebframework.web.commons.entity.DataStatus;
 import org.hswebframework.web.commons.entity.factory.EntityFactory;
 import org.hswebframework.web.entity.authorization.*;
@@ -48,6 +44,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -86,13 +83,14 @@ import java.util.stream.Stream;
 @EnableAccessLogger
 @EnableAopAuthorize
 public class SpringBootExample
-        implements CommandLineRunner {
+        implements CommandLineRunner ,ApplicationListener<AuthorizeDefinitionInitializedEvent>{
 
-    @Bean
-    public AopMethodAuthorizeDefinitionCustomizerParser customizerParser(){
-        //自定义权限声明
-        return context -> EmptyAuthorizeDefinition.instance;
-    }
+//    @Bean
+//    public AopMethodAuthorizeDefinitionCustomizerParser customizerParser(){
+//        //自定义权限声明
+//        //所有控制都通过
+//        return (type,method,context) -> EmptyAuthorizeDefinition.instance;
+//    }
 
     @Bean
     public AccessLoggerListener accessLoggerListener() {
@@ -106,8 +104,9 @@ public class SpringBootExample
         };
         return loggerInfo -> {
             Map<String, Object> loggerMap = loggerInfo.toSimpleMap(obj -> {
-                if (Stream.of(excludes).anyMatch(aClass -> aClass.isInstance(obj)))
+                if (Stream.of(excludes).anyMatch(aClass -> aClass.isInstance(obj))) {
                     return obj.getClass().getName();
+                }
                 return JSON.toJSONString(obj);
             });
 //            loggerMap.put("userToken", UserTokenHolder.currentToken());
@@ -170,6 +169,7 @@ public class SpringBootExample
 
     // main
     //    @Override
+    @Override
     public void run(String... strings) throws Exception {
         //只能查询自己创建的数据
         DataAccessEntity accessEntity = new DataAccessEntity();
@@ -305,5 +305,10 @@ public class SpringBootExample
 //        relationInfoService
 //                .getRelations("person","王伟")
 //                .findRev("直属上级");
+    }
+
+    @Override
+    public void onApplicationEvent(AuthorizeDefinitionInitializedEvent event) {
+        System.out.println(event.getAllDefinition());
     }
 }

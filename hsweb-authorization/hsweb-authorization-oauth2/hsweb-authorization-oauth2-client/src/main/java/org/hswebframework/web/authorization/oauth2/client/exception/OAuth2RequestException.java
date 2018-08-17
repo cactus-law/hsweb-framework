@@ -21,16 +21,25 @@ package org.hswebframework.web.authorization.oauth2.client.exception;
 import org.hswebframework.web.authorization.oauth2.client.response.OAuth2Response;
 import org.hswebframework.web.oauth2.core.ErrorType;
 
+import java.io.PrintStream;
+
 /**
  * @author zhouhao
  */
 public class OAuth2RequestException extends RuntimeException {
-    ErrorType errorType;
+    private static final long serialVersionUID = 6170266627415485170L;
+    private ErrorType errorType;
 
-    OAuth2Response response;
+    private OAuth2Response response;
 
     public OAuth2RequestException(ErrorType errorType, OAuth2Response response) {
-        super(errorType.name());
+        super(errorType.name() + (errorType == ErrorType.OTHER ? ":" + response.asString() : ""));
+        this.errorType = errorType;
+        this.response = response;
+    }
+
+    public OAuth2RequestException(String message, ErrorType errorType, OAuth2Response response) {
+        super(errorType+":"+message);
         this.errorType = errorType;
         this.response = response;
     }
@@ -42,4 +51,5 @@ public class OAuth2RequestException extends RuntimeException {
     public OAuth2Response getResponse() {
         return response;
     }
+
 }

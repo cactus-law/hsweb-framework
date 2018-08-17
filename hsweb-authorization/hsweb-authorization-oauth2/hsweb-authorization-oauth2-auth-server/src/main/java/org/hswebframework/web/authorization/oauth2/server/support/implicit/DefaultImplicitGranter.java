@@ -34,8 +34,6 @@ import java.util.Set;
 import static org.hswebframework.web.oauth2.core.ErrorType.*;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 public class DefaultImplicitGranter extends AbstractAuthorizationService implements ImplicitGranter {
@@ -49,8 +47,9 @@ public class DefaultImplicitGranter extends AbstractAuthorizationService impleme
 
         OAuth2Client client = getClient(clientId);
         assertGrantTypeSupport(client, GrantType.implicit);
-        if (scope == null || scope.isEmpty())
+        if (scope == null || scope.isEmpty()) {
             scope = client.getDefaultGrantScope();
+        }
         if (!client.getDefaultGrantScope().containsAll(scope)) {
             throw new GrantTokenException(SCOPE_OUT_OF_RANGE);
         }
@@ -64,6 +63,11 @@ public class DefaultImplicitGranter extends AbstractAuthorizationService impleme
         accessToken.setOwnerId(client.getOwnerId());
         accessToken.setExpiresIn(3600);
         accessToken.setClientId(clientId);
+        OAuth2AccessToken old = accessTokenService.tryGetOldToken(accessToken);
+        //如果已存在token并且距离上次更新时间小于10秒
+        if(old!=null&&System.currentTimeMillis()-old.getUpdateTime()<10000){
+            return old;
+        }
         return accessTokenService.saveOrUpdateToken(accessToken);
     }
 }

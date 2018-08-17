@@ -1,9 +1,13 @@
 package org.hswebframework.web.datasource;
 
 import org.hswebframework.ezorm.rdb.executor.SqlExecutor;
-import org.hswebframework.web.datasource.starter.AopDataSourceSwitcherAutoConfiguration;
+import org.hswebframework.web.datasource.config.DynamicDataSourceConfigRepository;
+import org.hswebframework.web.datasource.config.InSpringDynamicDataSourceConfig;
+import org.hswebframework.web.datasource.service.InSpringContextDynamicDataSourceService;
+import org.hswebframework.web.datasource.service.InSpringDynamicDataSourceConfigRepository;
 import org.hswebframework.web.datasource.switcher.DataSourceSwitcher;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -13,8 +17,6 @@ import org.springframework.context.annotation.Configuration;
 import javax.sql.DataSource;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 @Configuration
@@ -28,21 +30,17 @@ public class DynamicDataSourceAutoConfiguration implements BeanPostProcessor {
     }
 
     @Bean
+    @ConditionalOnMissingBean(DynamicDataSourceConfigRepository.class)
+    public InSpringDynamicDataSourceConfigRepository inSpringDynamicDataSourceConfigRepository() {
+        return new InSpringDynamicDataSourceConfigRepository();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(DynamicDataSourceService.class)
-    public DynamicDataSourceService justSupportDefaultDataSourceService(DataSource dataSource) {
+    public InSpringContextDynamicDataSourceService inMemoryDynamicDataSourceService(DynamicDataSourceConfigRepository<InSpringDynamicDataSourceConfig> repository,
+                                                                                    DataSource dataSource) {
         DynamicDataSourceProxy dataSourceProxy = new DynamicDataSourceProxy(null, dataSource);
-        return new DynamicDataSourceService() {
-            @Override
-            public DynamicDataSource getDataSource(String dataSourceId) {
-                throw new UnsupportedOperationException("dynamic datasource not enable");
-            }
-
-            @Override
-            public DynamicDataSource getDefaultDataSource() {
-                return dataSourceProxy;
-            }
-        };
-
+        return new InSpringContextDynamicDataSourceService(repository, dataSourceProxy);
     }
 
     @Override
@@ -60,4 +58,14 @@ public class DynamicDataSourceAutoConfiguration implements BeanPostProcessor {
         }
         return bean;
     }
+
+
+    @Configuration
+    public static class AutoRegisterDataSource {
+        @Autowired
+        public void setDataSourceService(DynamicDataSourceService dataSourceService) {
+            DataSourceHolder.dynamicDataSourceService = dataSourceService;
+        }
+    }
+
 }

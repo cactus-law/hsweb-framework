@@ -26,26 +26,39 @@ public class AopAccessLoggerSupportAutoConfiguration {
     }
 
     @Bean
-    public ListenerProcessor listenerProcessor() {
-        return new ListenerProcessor();
+    public DefaultAccessLoggerParser defaultAccessLoggerParser(){
+        return new DefaultAccessLoggerParser();
     }
 
-    public static class ListenerProcessor implements BeanPostProcessor {
-
-        @Autowired
-        private AopAccessLoggerSupport aopAccessLoggerSupport;
-
-        @Override
-        public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-            return bean;
-        }
-
-        @Override
-        public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-            if (bean instanceof AccessLoggerListener) {
-                aopAccessLoggerSupport.addListener(((AccessLoggerListener) bean));
-            }
-            return bean;
-        }
+    @Bean
+    @ConditionalOnClass(name = "io.swagger.annotations.Api")
+    public SwaggerAccessLoggerParser swaggerAccessLoggerParser(){
+        return new SwaggerAccessLoggerParser();
     }
+
+//    @Bean
+//    public ListenerProcessor listenerProcessor() {
+//        return new ListenerProcessor();
+//    }
+//
+//    public static class ListenerProcessor implements BeanPostProcessor {
+//
+//        @Autowired
+//        private AopAccessLoggerSupport aopAccessLoggerSupport;
+//
+//        @Override
+//        public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+//            return bean;
+//        }
+//
+//        @Override
+//        public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+//            if (bean instanceof AccessLoggerListener) {
+//                aopAccessLoggerSupport.addListener(((AccessLoggerListener) bean));
+//            }  if (bean instanceof AccessLoggerParser) {
+//                aopAccessLoggerSupport.addParser(((AccessLoggerParser) bean));
+//            }
+//            return bean;
+//        }
+//    }
 }

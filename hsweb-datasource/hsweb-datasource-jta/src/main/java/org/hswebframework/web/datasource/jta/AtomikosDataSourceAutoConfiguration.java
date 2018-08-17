@@ -1,6 +1,9 @@
 package org.hswebframework.web.datasource.jta;
 
+import org.hswebframework.web.datasource.DynamicDataSourceAutoConfiguration;
 import org.hswebframework.web.datasource.DynamicDataSourceService;
+import org.hswebframework.web.datasource.config.DynamicDataSourceConfigRepository;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.jta.atomikos.AtomikosDataSourceBean;
 import org.springframework.context.annotation.Bean;
@@ -11,30 +14,30 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 @Configuration
+@AutoConfigureBefore(DynamicDataSourceAutoConfiguration.class)
 public class AtomikosDataSourceAutoConfiguration {
 
     //默认数据源
-    @Bean(initMethod = "init", destroyMethod = "destroy", value = "defaultDataSource")
+    @Bean(initMethod = "init", destroyMethod = "destroy", value = "datasource")
     @Primary
-    public AtomikosDataSourceBean defaultDataSource() {
+    public AtomikosDataSourceBean datasource() {
         return new AtomikosDataSourceBean();
     }
 
     @ConditionalOnMissingBean(JtaDataSourceRepository.class)
     @Bean
-    public MemoryJtaDataSourceRepository memoryJtaDataSourceStore() {
-        return new MemoryJtaDataSourceRepository();
+    public InMemoryAtomikosDataSourceRepository memoryJtaDataSourceStore() {
+        return new InMemoryAtomikosDataSourceRepository();
     }
 
     @Bean
-    @ConditionalOnMissingBean(DynamicDataSourceService.class)
-    public JtaDynamicDataSourceService jtaDynamicDataSourceService(JtaDataSourceRepository jtaDataSourceRepository, DataSource dataSource) throws SQLException {
-        return new JtaDynamicDataSourceService(jtaDataSourceRepository, dataSource);
+    @Primary
+    public DynamicDataSourceService jtaDynamicDataSourceService(DynamicDataSourceConfigRepository<AtomikosDataSourceConfig> repository
+            , DataSource dataSource) throws SQLException {
+        return new JtaDynamicDataSourceService(repository, dataSource);
     }
 
 }

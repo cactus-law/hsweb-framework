@@ -11,11 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * TODO 完成注释
- *
  * @author zhouhao
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -25,12 +25,12 @@ public class DynamicScheduleTests extends SimpleWebApplicationTests {
     private ScheduleJobService scheduleJobService;
 
 
-    public static final AtomicLong counter=new AtomicLong();
+    public static final CountDownLatch counter=new CountDownLatch(1);
+    public static final AtomicLong value=new AtomicLong();
     private String id;
 
     @Before
     public void initJob() throws InterruptedException {
-        Thread.sleep(5000);
         id = scheduleJobService.insert(createJob());
         scheduleJobService.enable(id);
     }
@@ -40,16 +40,18 @@ public class DynamicScheduleTests extends SimpleWebApplicationTests {
         entity.setStatus(DataStatus.STATUS_ENABLED);
         entity.setType("test");
         entity.setLanguage("javascript");
+        entity.setTags("core2");
         entity.setScript("" +
-                "org.hswebframework.web.schedule.test.DynamicScheduleTests.counter.incrementAndGet()\n" +
-                "java.lang.System.out.println('job running...')");
+                "org.hswebframework.web.schedule.test.DynamicScheduleTests.value.incrementAndGet();\n" +
+                "org.hswebframework.web.schedule.test.DynamicScheduleTests.counter.countDown();\n" +
+                "java.lang.System.out.println('script job running...')");
         entity.setQuartzConfig("{\"type\":\"cron\",\"config\":\"0/1 * * * * ?\"}");
         return entity;
     }
 
     @Test
     public void testCreateJob() throws InterruptedException {
-        Thread.sleep(20000);
-        Assert.assertTrue(counter.get()>0);
+        counter.await(100, TimeUnit.SECONDS);
+        Assert.assertTrue(value.get()>0);
     }
 }

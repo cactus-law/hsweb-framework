@@ -1,19 +1,16 @@
 package org.hswebframework.web.authorization.basic.configuration;
 
-import org.hswebframework.web.authorization.AuthenticationHolder;
-import org.hswebframework.web.authorization.AuthenticationManager;
-import org.hswebframework.web.authorization.AuthenticationSupplier;
 import org.hswebframework.web.authorization.access.DataAccessController;
 import org.hswebframework.web.authorization.access.DataAccessHandler;
+import org.hswebframework.web.authorization.basic.aop.AopMethodAuthorizeDefinitionParser;
 import org.hswebframework.web.authorization.basic.handler.DefaultAuthorizingHandler;
 import org.hswebframework.web.authorization.basic.handler.access.DefaultDataAccessController;
 import org.hswebframework.web.authorization.basic.web.*;
-import org.hswebframework.web.authorization.token.MemoryUserTokenManager;
+import org.hswebframework.web.authorization.basic.web.session.UserTokenAutoExpiredListener;
 import org.hswebframework.web.authorization.token.UserTokenManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -41,10 +38,6 @@ public class AuthorizingHandlerAutoConfiguration {
         return new DefaultAuthorizingHandler(dataAccessController);
     }
 
-    @Bean
-    public UserTokenAuthenticationSupplier userTokenAuthenticationSupplier(AuthenticationManager authenticationManager) {
-        return new UserTokenAuthenticationSupplier(authenticationManager);
-    }
 
     @Bean
     @ConditionalOnMissingBean(UserTokenParser.class)
@@ -57,20 +50,16 @@ public class AuthorizingHandlerAutoConfiguration {
         return new SessionIdUserTokenGenerator();
     }
 
-    @Bean
-    @ConditionalOnMissingBean(UserTokenManager.class)
-    @ConfigurationProperties(prefix = "hsweb.authorize")
-    public UserTokenManager userTokenManager() {
-        return new MemoryUserTokenManager();
-    }
 
     @Bean
     public WebMvcConfigurer webUserTokenInterceptorConfigurer(UserTokenManager userTokenManager,
+                                                              AopMethodAuthorizeDefinitionParser parser,
                                                               List<UserTokenParser> userTokenParser) {
+
         return new WebMvcConfigurerAdapter() {
             @Override
             public void addInterceptors(InterceptorRegistry registry) {
-                registry.addInterceptor(new WebUserTokenInterceptor(userTokenManager, userTokenParser));
+                registry.addInterceptor(new WebUserTokenInterceptor(userTokenManager, userTokenParser,parser));
                 super.addInterceptors(registry);
             }
         };
@@ -84,6 +73,11 @@ public class AuthorizingHandlerAutoConfiguration {
     @Bean
     public UserOnSignOut userOnSignOut(UserTokenManager userTokenManager) {
         return new UserOnSignOut(userTokenManager);
+    }
+
+    @Bean
+    public UserTokenAutoExpiredListener userTokenAutoExpiredListener(UserTokenManager userTokenManager) {
+        return new UserTokenAutoExpiredListener(userTokenManager);
     }
 
     @Configuration
@@ -101,9 +95,6 @@ public class AuthorizingHandlerAutoConfiguration {
         public Object postProcessAfterInitialization(Object bean, String beanName) {
             if (bean instanceof DataAccessHandler) {
                 defaultDataAccessController.addHandler(((DataAccessHandler) bean));
-            }
-            if (bean instanceof AuthenticationSupplier) {
-                AuthenticationHolder.addSupplier(((AuthenticationSupplier) bean));
             }
             return bean;
         }

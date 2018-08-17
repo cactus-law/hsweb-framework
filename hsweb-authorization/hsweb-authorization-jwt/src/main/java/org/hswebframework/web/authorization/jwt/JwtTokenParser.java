@@ -2,6 +2,7 @@ package org.hswebframework.web.authorization.jwt;
 
 import com.alibaba.fastjson.JSON;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import org.hswebframework.web.authorization.basic.web.ParsedToken;
 import org.hswebframework.web.authorization.basic.web.UserTokenParser;
@@ -13,7 +14,8 @@ import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * Created by zhouhao on 2017/8/30.
+ * @see UserTokenParser
+ * @since 3.0
  */
 public class JwtTokenParser implements UserTokenParser {
 
@@ -33,9 +35,11 @@ public class JwtTokenParser implements UserTokenParser {
             if (!StringUtils.isEmpty(headerToken)) {
                 if (headerToken.contains(" ")) {
                     String[] auth = headerToken.split("[ ]");
-                    // if(auth[0].equalsIgnoreCase("jwt")){
-                    headerToken = auth[1];
-                    //}
+                    if (auth[0].equalsIgnoreCase("jwt") || auth[0].equalsIgnoreCase("Bearer")) {
+                        headerToken = auth[1];
+                    }else{
+                        return null;
+                    }
                 }
             }
         }
@@ -46,9 +50,11 @@ public class JwtTokenParser implements UserTokenParser {
 
                     return null;
                 }
-                return JSON.parseObject(claims.getSubject(), DefaultAuthorizedToken.class);
+                return JSON.parseObject(claims.getSubject(), JwtAuthorizedToken.class);
+            } catch (ExpiredJwtException e) {
+                return null;
             } catch (Exception e) {
-                logger.error("parse token [{}] error", headerToken, e);
+                logger.debug("parse token [{}] error", headerToken, e);
                 return null;
             }
         }

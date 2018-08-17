@@ -17,11 +17,11 @@ public final class DataSourceHolder {
     /**
      * 动态数据源切换器
      */
-    static DataSourceSwitcher dataSourceSwitcher = defaultSwitcher;
+    static volatile DataSourceSwitcher dataSourceSwitcher = defaultSwitcher;
     /**
      * 动态数据源服务
      */
-    static DynamicDataSourceService dynamicDataSourceService;
+    static volatile DynamicDataSourceService dynamicDataSourceService;
 
     public static void checkDynamicDataSourceReady() {
         if (dynamicDataSourceService == null) {
@@ -61,7 +61,9 @@ public final class DataSourceHolder {
      */
     public static DynamicDataSource currentDataSource() {
         String id = dataSourceSwitcher.currentDataSourceId();
-        if (id == null) return defaultDataSource();
+        if (id == null) {
+            return defaultDataSource();
+        }
         checkDynamicDataSourceReady();
         return dynamicDataSourceService.getDataSource(id);
     }
@@ -92,7 +94,9 @@ public final class DataSourceHolder {
      * @return 当前使用的数据源是否存在
      */
     public static boolean currentExisting() {
-        if (currentIsDefault()) return true;
+        if (currentIsDefault()) {
+            return true;
+        }
         try {
             return currentDataSource() != null;
         } catch (DataSourceNotFoundException e) {
